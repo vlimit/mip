@@ -1,4 +1,6 @@
+#!/usr/bin/env python
 
+import argparse
 import pexpect
 import sys
 import time
@@ -56,7 +58,13 @@ class Mip:
         
 if __name__ == '__main__':
 
-    gt = GattTool('hci0', 'D0:39:72:B8:C5:84')
+    parser = argparse.ArgumentParser(description='Quick test program.')
+    parser.add_argument('-i', '--adaptor', default='hci0', help='Specify local adaptor interface')
+    parser.add_argument('-b', '--device',  default='D0:39:72:B8:C5:84', help='Specify remote bluetooth address')
+
+    args = parser.parse_args()
+
+    gt = GattTool(args.adaptor, args.device)
     mip = Mip(gt)
 
     mip.sound(0x4d)
