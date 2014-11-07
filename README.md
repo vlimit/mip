@@ -39,7 +39,7 @@ D0:39:72:B8:C5:84 WowWee-MiP-33506
 Grab the bluetooth address of MIP (in this case, D0:39:72:B8:C5:84). Time to start the script:
 
 ```
-$ examples/turtle_example.py -i hci0 -b 00:B4:7D:E2:A1:FE
+$ .src/examples/turtle_example.py -i hci0 -b D0:39:72:B8:C5:84
 ```
 
 You should see MIPs chest light turn green when the bluetooth connection is made. MIP will make a sound and move around.
