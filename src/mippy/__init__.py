@@ -32,10 +32,6 @@ class GattTool:
         for byte_val in byte_vals:
             val += '%2.2x' % (byte_val)
 
-        # Format the string to make sure the number of digits == 2*len(byte_vals)
-        # This preserves leading zeroes, which is what we want.
-#        fmt = '%%%d.%dx' % (len(byte_vals) * 2, len(byte_vals) * 2)
-
         cmd = 'char-write-cmd 0x%4.4x ' % (handle) + val
         logging.debug('gatttool cmd: %s' % (cmd))
         self.child.sendline(cmd)
