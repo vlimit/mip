@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import logging
 import pexpect
 import sys
 import time
@@ -23,8 +24,21 @@ class GattTool:
         self.child.sendline('disconnect')
         self.child.expect(self.PROMPT, timeout=1)
 
-    def charWriteCmd(self, handle, value):
-        cmd = 'char-write-cmd 0x%4.4x %6.6x' % (handle, value)
+    def charWriteCmd(self, handle, byte_vals):
+
+        if not iter(byte_vals):
+            byte_vals = [byte_vals]
+
+        val = 0
+        for byte_val in byte_vals:
+            val = (val << 8) + int(byte_val)
+
+        # Format the string to make sure the number of digits == 2*len(byte_vals)
+        # This preserves leading zeroes, which is what we want.
+        fmt = '%%%d.%dx' % (len(byte_vals) * 2, len(byte_vals) * 2)
+
+        cmd = 'char-write-cmd 0x%4.4x ' % (handle) + fmt % (val)
+        logging.debug('gatttool cmd: %s' % (cmd))
         self.child.sendline(cmd)
 
 class Mip:
@@ -33,29 +47,96 @@ class Mip:
         self.gt.connect()   
         time.sleep(2)
  
-    def forward(self, dist):
-        self.gt.charWriteCmd(0x13, 0x70 << 16 | 00 << 8 | int(round(dist * 50)))
-        t = dist * 5
-        time.sleep(t)
-
-    def reverse(self, dist):
-        self.gt.charWriteCmd(0x13, 0x70 << 16 | 01 << 8 | int(round(dist * 50)))
-        t = dist * 5
-        time.sleep(t)
-
-    def left(self, angle, speed=15):
-        self.gt.charWriteCmd(0x13, 0x73 << 16 | int(round(angle / 4.0)) << 8 | speed)
-        t = angle / 360.0 * 0.9
-        time.sleep(t)
-
-    def right(self, angle, speed=15):
-        self.gt.charWriteCmd(0x13, 0x74 << 16 | int(round(angle / 4.0)) << 8 | speed)
-        t = angle / 360.0 * 0.9
-        time.sleep(t)
-
-    def sound(self, id):
-        self.gt.charWriteCmd(0x13, 0x06 << 16 | id << 8 | 0)
+    def playSound(self, id):
+        self.gt.charWriteCmd(0x13, [0x06, id, 0])
         
+    def setMipPosition(self, position):
+        self.gt.charWriteCmd(0x13, [0x08, position])
+
+    def distanceDrive(self, distance, angle=0):
+        """
+            distance (+/-m)
+            angle    (+/-deg)
+        """
+
+        if distance > 0:
+            direction = 0
+        else:
+            direction = 1
+        distance = abs(distance)
+
+        if angle > 0:
+            rotation = 0
+        else:
+            rotation = -1
+        angle = abs(angle)
+        self.gt.charWriteCmd(0x13, [0x70, direction, distance, rotation, angle >> 8, angle & 0xff])
+        t = distance * 5
+        time.sleep(t)
+
+    def driveWithTime(self, speed, time_):
+        """
+            speed (-30...+30)
+            time  (s)
+        """
+
+        t = int(round(time_/0.05))
+
+        speed_mag = abs(speed)
+        speed_sign = speed/speed_mag
+
+        if speed_sign > 0:
+            # Forward
+            self.gt.charWriteCmd(0x13, [0x71, speed_mag, t/0.07])
+        else:
+            # Reverse
+            self.gt.charWriteCmd(0x13, [0x72, speed_mag, t/0.07])
+
+    def turnByAngle(self, angle, speed=15):
+        """
+            angle (deg)
+            speed (0-24)
+        """
+
+        angle_mag = abs(angle)
+        angle_sign = angle / angle_mag
+
+        if angle_sign > 0:
+            self.gt.charWriteCmd(0x13, [0x74, int(round(angle_mag / 5.0)), speed])
+        else:
+            self.gt.charWriteCmd(0x13, [0x73, int(round(angle_mag / 5.0)), speed])
+
+        t = angle_mag / 360.0 * 0.9
+        time.sleep(t)
+
+    # Add continuous drive
+    # Add set game mode
+
+    def setChestLed(self, r, g, b):
+
+        r = int(r * 255)
+        g = int(g * 255)
+        b = int(b * 255)
+
+        self.gt.charWriteCmd(0x13, [0x84, r, g, b])
+
+class Turtle:
+    def __init__(self, mip):
+        self.mip = mip
+
+    def left(self, angle):
+        self.mip.turnByAngle(-angle)
+
+    def right(self, angle):
+        self.mip.turnByAngle(angle)
+
+    def forward(self, distance):
+        self.mip.distanceDrive(distance)
+
+    def reverse(self, distance):
+        self.mip.distanceDrive(-distance)
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Quick test program.')
@@ -65,22 +146,26 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     gt = GattTool(args.adaptor, args.device)
+
     mip = Mip(gt)
 
-    mip.sound(0x4d)
+    mip.playSound(0x4d)
+    mip.setChestLed(0.5, 0.5, 0.5)
+
+    turtle = Turtle(mip)
+ 
+    if 1:
+        turtle.forward(0.4)
+        turtle.right(90)
+        turtle.forward(0.4)
+        turtle.right(90)
+        turtle.forward(0.4)
+        turtle.right(90)
+        turtle.forward(0.4)
+        turtle.right(90)
 
     if 0:
-        mip.forward(0.4)
-        mip.right(90)
-        mip.forward(0.4)
-        mip.right(90)
-        mip.forward(0.4)
-        mip.right(90)
-        mip.forward(0.4)
-        mip.right(90)
-
-    if 1:
         for i in range(10):
-            mip.left(720)
-            mip.right(720)
+            turtle.right(720)
+            turtle.left(720)
 
