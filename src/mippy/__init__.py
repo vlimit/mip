@@ -4,6 +4,7 @@ import pexpect
 import sys
 import time
 
+
 class GattTool:
 
     PROMPT = '.*\[LE\]>'
@@ -27,17 +28,18 @@ class GattTool:
         if not iter(byte_vals):
             byte_vals = [byte_vals]
 
-        val = 0
+        val = ''
         for byte_val in byte_vals:
-            val = (val << 8) + int(byte_val)
+            val += '%2.2x' % (byte_val)
 
         # Format the string to make sure the number of digits == 2*len(byte_vals)
         # This preserves leading zeroes, which is what we want.
-        fmt = '%%%d.%dx' % (len(byte_vals) * 2, len(byte_vals) * 2)
+#        fmt = '%%%d.%dx' % (len(byte_vals) * 2, len(byte_vals) * 2)
 
-        cmd = 'char-write-cmd 0x%4.4x ' % (handle) + fmt % (val)
+        cmd = 'char-write-cmd 0x%4.4x ' % (handle) + val
         logging.debug('gatttool cmd: %s' % (cmd))
         self.child.sendline(cmd)
+
 
 class Mip:
     def __init__(self, gt):
@@ -66,9 +68,16 @@ class Mip:
         if angle > 0:
             rotation = 0
         else:
-            rotation = -1
+            rotation = 1
         angle = abs(angle)
-        self.gt.charWriteCmd(0x13, [0x70, direction, distance, rotation, angle >> 8, angle & 0xff])
+        self.gt.charWriteCmd(
+            0x13, [
+                0x70, 
+                direction, 
+                int(round(distance * 100)), 
+                rotation, angle >> 8, 
+                angle & 0xff])
+
         t = distance * 5
         time.sleep(t)
 
@@ -134,6 +143,23 @@ class Turtle:
 
     def reverse(self, distance):
         self.mip.distanceDrive(-distance)
+
+
+def add_arguments(parser):
+
+    """Add gatttool-style arguments to an optparse parser."""
+
+    parser.add_argument(
+        '-i',
+        '--adaptor',
+        default='hci0',
+        help='Specify local adaptor interface')
+
+    parser.add_argument(
+        '-b',
+        '--device',
+        default='D0:39:72:B8:C5:84',
+        help='Specify remote bluetooth address')
 
 
 if __name__ == '__main__':
