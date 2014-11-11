@@ -23,10 +23,7 @@ class GattTool:
         self.child.sendline('disconnect')
         self.child.expect(self.PROMPT, timeout=1)
 
-    def charWriteCmd(self, handle, byte_vals):
-
-        if not iter(byte_vals):
-            byte_vals = [byte_vals]
+    def charWriteCmd(self, handle, byte_vals=[]):
 
         val = ''
         for byte_val in byte_vals:
@@ -105,9 +102,17 @@ class Mip:
         angle_sign = angle / angle_mag
 
         if angle_sign > 0:
-            self.gt.charWriteCmd(0x13, [0x74, int(round(angle_mag / 5.0)), speed])
+            self.gt.charWriteCmd(
+                0x13, [
+                    0x74, 
+                    int(round(angle_mag / 5.0)), 
+                    speed])
         else:
-            self.gt.charWriteCmd(0x13, [0x73, int(round(angle_mag / 5.0)), speed])
+            self.gt.charWriteCmd(
+                0x13, [
+                    0x73, 
+                    int(round(angle_mag / 5.0)), 
+                    speed])
 
         t = angle_mag / 360.0 * 0.9
         time.sleep(t)

@@ -1,4 +1,4 @@
-#MIP Hacking - Experiments with Wowee's MIP
+#Experiments with Wowee's MIP
 
 ##Introduction
 This started out as a reverse engineering effort to work out the protocol used by Wowwee's MIP robot. I used an Ubertooth One to sniff the Bluetooth Low Energy traffic and worked out some of the commands to control the robot. After posting a script on Git Hub, I emailed Wowwee asking about additional documentation. Andy, the R&D Software Manager at Wowwee got back to me and within a few days they posted [documentation] (https://github.com/WowWeeLabs/MiP-BLE-Protocol/blob/master/MiP-Protocol.md) on their Git Hub site. Fantastic! Thanks Wowwee!
