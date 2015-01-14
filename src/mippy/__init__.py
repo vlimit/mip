@@ -178,7 +178,8 @@ class Mip:
 
     def continuousDriveForward(self, speed):
         """
-        Start driving at a certain speed
+        Start driving forwards at a certain speed
+        This method needs to be called about once every 50ms to maintain speed
         speed (0..32) (0x0..0x20)
         """
         if speed < 0:
@@ -189,7 +190,8 @@ class Mip:
 
     def continuousDriveBackward(self, speed):
         """
-        Start driving at a certain speed
+        Start driving backwards at a certain speed
+        This method needs to be called about once every 50ms to maintain speed
         speed (0..32) (0x0..0x20)
         """
         if speed < 0:
@@ -200,29 +202,79 @@ class Mip:
         self.gt.charWriteCmd(0x13, [0x78, speed+0x20])
 
 
-    def continuousTurnRight(self, speed):
+    def continuousTurnForwardRight(self, speed, turnSpeed):
         """
         Start turning right at a certain speed
-        speed (0..32) (0x0..0x20)
+        This method needs to be called about once every 50ms to maintain speed
+        speed (forwards) (0..32) (0x0..0x20)
+        turnSpeed (0..32) (0x0..0x20)
         """
         if speed < 0:
             speed = 0
         if speed > 0x20:
             speed = 0x20
-        # right is actually 0x40-0x60 
-        self.gt.charWriteCmd(0x13, [0x78, speed+0x41])
+        if turnSpeed < 1:
+            turnSpeed = 1
+        if turnSpeed > 0x20:
+            turnSpeed = 0x20
+        # right is actually 0x41-0x60 so add 0x40
+        self.gt.charWriteCmd(0x13, [0x78, speed, turnSpeed+0x40])
 
-    def continuousTurnLeft(self, speed):
+    def continuousTurnForwardLeft(self, speed, turnSpeed):
         """
         Start turning left at a certain speed
-        speed (0..32) (0x0..0x20)
+        This method needs to be called about once every 50ms to maintain speed
+        speed (forwards) (0..32) (0x0..0x20)
+        turnSpeed (0..32) (0x0..0x20)
         """
         if speed < 0:
             speed = 0
         if speed > 0x20:
             speed = 0x20
-        # right is actually 0x61-0x80 
-        self.gt.charWriteCmd(0x13, [0x78, speed+0x61])
+        if turnSpeed < 1:
+            turnSpeed = 1
+        if turnSpeed > 0x20:
+            turnSpeed = 0x20
+        # left is actually 0x61-0x80 so add 0x60
+        self.gt.charWriteCmd(0x13, [0x78, speed, turnSpeed+0x60])
+
+    def continuousTurnBackwardRight(self, speed, turnSpeed):
+        """
+        Start turning backwards right at a certain speed
+        This method needs to be called about once every 50ms to maintain speed
+        speed (backwards) (0..32) (0x0..0x20)
+        turnSpeed (0..32) (0x0..0x20)
+        """
+        if speed < 0:
+            speed = 0
+        if speed > 0x20:
+            speed = 0x20
+        if turnSpeed < 1:
+            turnSpeed = 1
+        if turnSpeed > 0x20:
+            turnSpeed = 0x20
+        # backwards is actually 0x21-0x40, so add 0x20
+        # right is actually 0x41-0x60 so add 0x40
+        self.gt.charWriteCmd(0x13, [0x78, speed+0x20, turnSpeed+0x40])
+
+    def continuousTurnBackwardLeft(self, speed, turnSpeed):
+        """
+        Start turning backward left at a certain speed
+        This method needs to be called about once every 50ms to maintain speed
+        speed (backwards) (0..32) (0x0..0x20)
+        turnSpeed (0..32) (0x0..0x20)
+        """
+        if speed < 0:
+            speed = 0
+        if speed > 0x20:
+            speed = 0x20
+        if turnSpeed < 1:
+            turnSpeed = 1
+        if turnSpeed > 0x20:
+            turnSpeed = 0x20
+        # backwards is actually 0x21-0x40, so add 0x20
+        # left is actually 0x61-0x80 so add 0x60
+        self.gt.charWriteCmd(0x13, [0x78, speed+0x20, turnSpeed+0x60])
 
     # Add set game mode
 
@@ -381,29 +433,30 @@ class Mip:
         self.gt.charWriteCmd(0x13, [0x0c, 0x0])
         return thisResponse
 
-    def continousDriveForwardUntilRadar(self,speed):
+    def continuousDriveForwardUntilRadar(self,speed):
         """
         Start driving at a certain speed
         speed (0..32) (0x0..0x20)
         Until a radar response is received that indicates we are near an object
+        Or we are no longer vertical.
         """
         # turn radar mode on
-        logging.debug('continousDriveForwardUntilRadar: writing MiP Set Gesture Radar Mode  ON: 0x0c 0x04 .')
+        logging.debug('continuousDriveForwardUntilRadar: writing MiP Set Gesture Radar Mode  ON: 0x0c 0x04 .')
         self.gt.charWriteCmd(0x13, [0x0c, 0x04])
         radarResponse = 0
-        orientation = 2
+        orientation = 2 # upright
         done = 0
         while(done == 0):
-            # continous drive forwards
-            logging.debug('continousDriveForwardUntilRadar: Driving forwards at speed: %x .' % speed)
+            # continuous drive forwards
+            logging.debug('continuousDriveForwardUntilRadar: Driving forwards at speed: %x .' % speed)
             self.gt.charWriteCmd(0x13, [0x78, speed])
             try:
                 # Try and read a radar response, timeout after 0.02secs
-                logging.debug('continousDriveForwardUntilRadar: Trying to read any response.')
+                logging.debug('continuousDriveForwardUntilRadar: Trying to read any response.')
                 returnVals = self.gt.charReadReply(0x13, -1 ,timeout=0.02)
                 if returnVals[0] == 0x0c:   # radar response
                     radarResponse = returnVals[1]
-                    logging.debug('continousDriveForwardUntilRadar: Radar response was %d.' % radarResponse)
+                    logging.debug('continuousDriveForwardUntilRadar: Radar response was %d.' % radarResponse)
                 elif returnVals[0] == 0x79: # MiPStatus response
                     # returnVals[1] is battery level
                     orientation = returnVals[2]
@@ -411,11 +464,11 @@ class Mip:
                                          'upright' , 'picked up',
                                          'hand stand' , 'face down on tray' , 
                                          'on back with kickstand' ]
-                    logging.debug('continousDriveForwardUntilRadar: MiP Status orientation %s' % (orientationString[orientation]))
+                    logging.debug('continuousDriveForwardUntilRadar: MiP Status orientation %s' % (orientationString[orientation]))
             except pexpect.TIMEOUT:
                 radarResponse = 0
                 orientation = 2
-                logging.debug('continousDriveForwardUntilRadar: NO Radar response.')
+                logging.debug('continuousDriveForwardUntilRadar: NO Radar response.')
             # radarResponse value 0 - no radar response
             # radarResponse value 1 - no object
             # radarResponse value 2 - object between 10cm-30cm
@@ -425,7 +478,7 @@ class Mip:
             # Stop if we detect an object or we are not upright
             done = (radarResponse > 1) or (orientation != 2)
         # turn radar mode off
-        logging.debug('continousDriveForwardUntilRadar: writing MiP Set Gesture Radar Mode  Off 0x0c 0x0 .')
+        logging.debug('continuousDriveForwardUntilRadar: writing MiP Set Gesture Radar Mode  Off 0x0c 0x0 .')
         self.gt.charWriteCmd(0x13, [0x0c, 0x0])
 
 
