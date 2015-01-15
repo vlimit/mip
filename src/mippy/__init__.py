@@ -176,6 +176,63 @@ class Mip:
         """
         self.gt.charWriteCmd(0x13, [0x77])
 
+    def continuousDrive(self, speed, turnSpeed=0x0):
+        """
+        Continuous Drive - this method needs to be called every 50ms to maintain drive
+        speed (-0x20 - 0x20) - speed forwards or backwards
+        turnSpeed (-0x20 - 0x20) - turn speed, negative for left, positive for right
+        """
+        if speed < 0:
+            direction = 0x20
+            speed = -speed
+        else:
+            direction = 0x0
+        if speed < 1:
+            speed = 1
+        if speed > 0x20:
+            speed = 0x20
+        if turnSpeed < 0:
+            turnDirection = 0x60
+            turnSpeed = -turnSpeed
+        elif turnSpeed > 0:
+            turnDirection = 0x40
+        else:
+            turnDirection = 0x0
+        if turnSpeed < 0:
+            turnSpeed = 0
+        if turnSpeed > 0x20:
+            turnSpeed = 0x20
+        self.gt.charWriteCmd(0x13, [0x78, direction+speed, turnDirection+turnSpeed])
+
+    def continuousCarzyDrive(self, speed, turnSpeed=0x0):
+        """
+        Some other sort of Continuous Drive -  what does it do?
+        this method needs to be called every 50ms to maintain drive
+        speed (-0x20 - 0x20) - speed forwards or backwards
+        turnSpeed (-0x20 - 0x20) - turn speed, negative for left, positive for right
+        """
+        if speed < 0:
+            direction = 0xA0
+            speed = -speed
+        else:
+            direction = 0x80
+        if speed < 1:
+            speed = 1
+        if speed > 0x20:
+            speed = 0x20
+        if turnSpeed < 0:
+            turnDirection = 0xE0
+            turnSpeed = -turnSpeed
+        elif turnSpeed > 0:
+            turnDirection = 0xC0
+        else:
+            turnDirection = 0x0
+        if turnSpeed < 0:
+            turnSpeed = 0
+        if turnSpeed > 0x20:
+            turnSpeed = 0x20
+        self.gt.charWriteCmd(0x13, [0x78, direction+speed, turnDirection+turnSpeed])
+
     def continuousDriveForward(self, speed):
         """
         Start driving forwards at a certain speed
@@ -200,7 +257,6 @@ class Mip:
             speed = 0x20
         # backwards is actually 0x21-0x40, so add 0x20
         self.gt.charWriteCmd(0x13, [0x78, speed+0x20])
-
 
     def continuousTurnForwardRight(self, speed, turnSpeed):
         """

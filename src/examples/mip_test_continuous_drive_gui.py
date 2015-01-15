@@ -31,27 +31,27 @@ def updateMovement():
     elif movementCanvas.positionAngle >= 0 and movementCanvas.positionAngle <= 45:
         forwardSpeed = int(movementCanvas.positionY * (0x20/50))
         turnSpeed = int(movementCanvas.positionX * (0x20/50))
-        logging.debug('updateMovement : forward right : forward speed %d : turn speed %d' % (speed,turnSpeed))
+        logging.debug('updateMovement : forward right : forward speed %d : turn speed %d' % (forwardSpeed,turnSpeed))
         mip.continuousTurnForwardRight(forwardSpeed,turnSpeed)
     elif movementCanvas.positionAngle >= 135 and movementCanvas.positionAngle <= 180:
         forwardSpeed = int(movementCanvas.positionY * (0x20/50))
         turnSpeed = int(movementCanvas.positionX * (0x20/50))
         turnSpeed = -turnSpeed
-        logging.debug('updateMovement : forward left : forward speed %d : turn speed %d' % (speed,turnSpeed))
+        logging.debug('updateMovement : forward left : forward speed %d : turn speed %d' % (forwardSpeed,turnSpeed))
         mip.continuousTurnForwardLeft(forwardSpeed,turnSpeed)
 # backwards turns
     elif movementCanvas.positionAngle >= 315 and movementCanvas.positionAngle <= 360:
         forwardSpeed = int(movementCanvas.positionY * (0x20/50))
         forwardSpeed = -forwardSpeed
         turnSpeed = int(movementCanvas.positionX * (0x20/50))
-        logging.debug('updateMovement : backward right : forward speed %d : turn speed %d' % (speed,turnSpeed))
+        logging.debug('updateMovement : backward right : forward speed %d : turn speed %d' % (forwardSpeed,turnSpeed))
         mip.continuousTurnBackwardRight(forwardSpeed,turnSpeed)
     elif movementCanvas.positionAngle >= 180 and movementCanvas.positionAngle <= 225:
         forwardSpeed = int(movementCanvas.positionY * (0x20/50))
         forwardSpeed = -forwardSpeed
         turnSpeed = int(movementCanvas.positionX * (0x20/50))
         turnSpeed = -turnSpeed
-        logging.debug('updateMovement : backward left : forward speed %d : turn speed %d' % (speed,turnSpeed))
+        logging.debug('updateMovement : backward left : forward speed %d : turn speed %d' % (forwardSpeed,turnSpeed))
         mip.continuousTurnBackwardLeft(forwardSpeed,turnSpeed)
 
     top.after(50,updateMovement)
