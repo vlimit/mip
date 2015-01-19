@@ -19,13 +19,6 @@ if __name__ == '__main__':
     gt = mippy.GattTool(args.adaptor, args.device)
 
     mip = mippy.Mip(gt)
-# roam whistle
-#    mip.playSound(0x4d)
-
-#    x=0
-#    y=0
-# https://www.youtube.com/watch?v=Qr60hWFyKHc
-# https://www.youtube.com/watch?v=_1tTS638xUQ
 # Create window
     root = Tk()
     root.title("MiP Control Panel")

@@ -169,7 +169,6 @@ class Mip:
         t = angle_mag / 360.0 * 0.9
         time.sleep(t)
 
-    # Add continuous drive
     def stopDrive(self):
         """
         Stop continuous drive?
@@ -332,7 +331,19 @@ class Mip:
         # left is actually 0x61-0x80 so add 0x60
         self.gt.charWriteCmd(0x13, [0x78, speed+0x20, turnSpeed+0x60])
 
-    # Add set game mode
+    def setGameMode(self, mode):
+        """
+        Set game mode, mode is one of:
+         0x01 – App
+         0x02 – Cage Play back
+         0x03 – Tracking
+         0x04 – Dance Play back
+         0x05 – Default Mip Mode
+         0x06 – Stack Play back
+         0x07 – Trick programming and playback
+         0x08 – Roam Mode Play back	
+        """
+        self.gt.charWriteCmd(0x13, [0x76, mode])
 
     def setChestLed(self, r, g, b):
 
@@ -351,6 +362,17 @@ class Mip:
         colourVals.append(returnVals[2])
         colourVals.append(returnVals[3])
         return colourVals
+
+    def setHeadLed(self, light1, light2, light3, light4):
+        """
+        Set Head LEDs (eyes). Each light<n> control one half of one of MiPS eyes,
+        legal values are:
+        0 = off
+        1 = on
+        2 = blink slow
+        3 = blink fast
+        """
+        self.gt.charWriteCmd(0x13, [0x8A, light1, light2, light3, light4 ])
 
     def getBatteryLevel(self):
         """
@@ -400,6 +422,16 @@ class Mip:
             except pexpect.TIMEOUT:
                 retryCount += 1
         return returnVals
+
+    def getUp(self,mode):
+        """
+        Attempt to right MiP after he has had a fall. This only works if he hasn't fallen too far.
+        mode = 
+        0x0 - get up when MiP has fallen on his front
+        0x1 - get up when MiP has fallen on his back
+        0x2 - get up when MiP has fallen on his front or back
+        """
+        self.gt.charWriteCmd(0x13, [0x23, mode])
 
     def getWeight(self):
         """
@@ -487,6 +519,34 @@ class Mip:
         logging.debug('getRadarResponse: response is %x.' % (thisResponse))
         # setGestureRadarMode(0x0) = turn Radar mode off
         self.gt.charWriteCmd(0x13, [0x0c, 0x0])
+        return thisResponse
+
+    def getGesture(self):
+        """
+        Attempt to recognise a gesture.
+        Sends a setGestureRadarMode(0x02), and then hopes a gesture is returned before
+        a timeout occurs. If a timeout occurs then 'no gesture' is returned.
+        Return values:
+        0x00 - no gesture
+        0x0a - left
+        0x0b - right
+        0x0c - centre sweep left
+        0x0d - centre sweep right
+        0x0e - centre hold
+        0x0f - forward
+        0x10 - backward
+        """
+        try:
+            logging.debug('getGesture: sending setGestureRadarMode.')
+            # setGestureRadarMode(0x02) = turn Gesture mode on
+            self.gt.charWriteCmd(0x13, [0x0c, 0x02])
+            logging.debug('getGesture: Waiting for reply.')
+            returnVals = self.gt.charReadReply(0x13, 0x0a)
+            thisResponse = returnVals[1]
+            logging.debug('getGesture: Reply was: %x.' % (thisResponse))
+        except pexpect.TIMEOUT:
+            thisResponse = 0x0
+            logging.debug('getGesture: No Reply detected.')
         return thisResponse
 
     def continuousDriveForwardUntilRadar(self,speed):
