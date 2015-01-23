@@ -39,7 +39,7 @@ class SoundWindow(Toplevel):
         Manage a sound control window
         """
         self.title("Sound Window")
-        self.geometry("600x400")
+        self.geometry("600x350")
         soundMenubar = Menu(self)
         soundFileMenu = Menu(soundMenubar, tearoff=0)
         soundFileMenu.add_command(label="Exit", command=self.destroy)
@@ -219,7 +219,7 @@ class ModeWindow(Toplevel):
 
     def startModeWindow(self):
         self.title("Mode Window")
-        self.geometry("200x300")
+        self.geometry("200x100")
         modeMenubar = Menu(self)
         modeFileMenu = Menu(modeMenubar, tearoff=0)
         modeFileMenu.add_command(label="Exit", command=self.destroy)
@@ -228,6 +228,7 @@ class ModeWindow(Toplevel):
         modeFrame = Frame(self)
         modeFrame.pack()
         self.modeVar = IntVar()
+        self.modeVar.set(0x1) # We are by default in App mode
         appRadio = Radiobutton(modeFrame, text="App", variable=self.modeVar, value=0x1, 
                                command=self.modeSelected)
         appRadio.pack(side=TOP)
@@ -240,15 +241,19 @@ class ModeWindow(Toplevel):
         roamRadio = Radiobutton(modeFrame, text="Roam", variable=self.modeVar, value=0x8, 
                                  command=self.modeSelected)
         roamRadio.pack(side=TOP)
+        # We are by default in App mode
+        #appRadio.select()
 
-    def modeSelected():
+    def modeSelected(self):
         mip.setGameMode(self.modeVar.get())
 
 class TelemetryWindow(Toplevel):
     """
     Class to manage and control the mode dialog. Used for chagning MiPs mode in and out of App.
     """
-
+    global updateTelemetry
+    global distanceValueLabel
+    global batteryValueLabel
     updateTelemetry = 0
 
     def __init__(self, master=None):
@@ -256,24 +261,45 @@ class TelemetryWindow(Toplevel):
         self.startTelemetryWindow()
 
     def startTelemetryWindow(self):
+        global updateTelemetry
+        global distanceValueLabel
+        global batteryValueLabel
+        global orientationValueLabel
         self.title("Telemetry Window")
         self.geometry("300x300")
         telemetryMenubar = Menu(self)
         telemetryFileMenu = Menu(telemetryMenubar, tearoff=0)
-        telemetryFileMenu.add_command(label="Exit", command=stopTelemetryWindow)
+        telemetryFileMenu.add_command(label="Exit", command=self.stopTelemetryWindow)
         telemetryMenubar.add_cascade(label="File", menu=telemetryFileMenu)
         self.config(menu=telemetryMenubar)
         telemetryFrame = Frame(self)
         telemetryFrame.pack()
         updateTelemetry = 1
-# distance
-# orientation
-# battery level
-# special quit/manage routine that sets flag queried in updateLoop to regularily update values
+        # orientation
+        orientationLabel = Label(telemetryFrame, text = "Orientation:")
+        orientationLabel.grid(column=0,row=0)
+        orientationValueLabel = Label(telemetryFrame, text = "Upright")
+        orientationValueLabel.grid(column=1,row=0)
+        # battery level
+        batteryLabel = Label(telemetryFrame, text = "Battery(v):")
+        batteryLabel.grid(column=0,row=1)
+        batteryValueLabel = Label(telemetryFrame, text = "0.0")
+        batteryValueLabel.grid(column=1,row=1)
+        # distance
+        resetOdometerButton = Button(telemetryFrame, text = "Reset", command = self.resetOdometer)
+        resetOdometerButton.grid(column=0,row=2)
+        distanceLabel = Label(telemetryFrame, text = "Distance(m):")
+        distanceLabel.grid(column=1,row=2)
+        distanceValueLabel = Label(telemetryFrame, text = "0.0")
+        distanceValueLabel.grid(column=2,row=2)
 
     def stopTelemetryWindow(self):
+        global updateTelemetry
         updateTelemetry = 0
         self.destroy()
+
+    def resetOdometer(self):
+        mip.resetOdomemeter()
 
 def getDistance():
     distanceString = distanceEntry.get()
@@ -329,10 +355,6 @@ def startModeWindow():
 # move MiP in and out of computer control, allow selection of roam and music modes
     modeWindow = ModeWindow()
 
-lastBatteryUpdateTime = 0.0
-lastDistanceUpdateTime = 0.0
-lastOrientationUpdateTime = 0.0
-
 def updateLoop():
     """
     Top-level update loop.
@@ -340,20 +362,39 @@ def updateLoop():
     Currenly just calls updateMovement to drive MiP in continuous drive mode,
     if applicable
     """
+    global updateTelemetry
+    global lastOrientationUpdateTime
+    global lastDistanceUpdateTime
+    global lastBatteryUpdateTime
+    global distanceValueLabel
+    global batteryValueLabel
+    global orientationValueLabel
+
     updateMovement()
     thisTime = time.time()
-    if((thisTime - lastOrientationUpdateTime) > 1.0):
-        orientation = mip.getMiPOrientationStatus()
-        orientationString = ['on back' , 'face down' , 'upright' , 'picked up',
-                             'hand stand' , 'face down on tray' , 
-                             'on back with kickstand' ]
-        lastOrientationUpdateTime = thisTime
-    if((thisTime - lastDistanceUpdateTime) > 10.0):
-        distance = mip.getOdometer()
-        lastDistanceUpdateTime = thisTime
-    if((thisTime - lastBatteryUpdateTime) > 60.0):
-        batteryLevel = mip.getBatteryLevel()
-        lastBatteryUpdateTime = thisTime
+    if(updateTelemetry == 1):
+        #logging.debug('updateLoop : updateTelemetry = 1')
+        if((thisTime - lastOrientationUpdateTime) > 1.0):
+            #logging.debug('updateLoop : Attempting orientation update')
+            orientation = mip.getMiPOrientationStatus()
+            orientationString = ['on back' , 'face down' , 'upright' , 'picked up',
+                                 'hand stand' , 'face down on tray' , 
+                                 'on back with kickstand' ]
+            #logging.debug('updateLoop : Orientation = %s ' % (orientationString[orientation]))
+            orientationValueLabel.config(text=orientationString[orientation])
+            lastOrientationUpdateTime = thisTime
+        if((thisTime - lastDistanceUpdateTime) > 10.0):
+            #logging.debug('updateLoop : Attempting distance update')
+            distance = mip.getOdometer()
+            #logging.debug('updateLoop : Distance = %f m' % (distance))
+            distanceValueLabel.config(text=str(distance))
+            lastDistanceUpdateTime = thisTime
+        if((thisTime - lastBatteryUpdateTime) > 60.0):
+            #logging.debug('updateLoop : Attempting battery level update')
+            batteryLevel = mip.getBatteryLevel()
+            #logging.debug('updateLoop : Battery Level = %f v' % (batteryLevel))
+            batteryValueLabel.config(text=str(batteryLevel))
+            lastBatteryUpdateTime = thisTime
     root.after(50,updateLoop)
 
 def updateMovement():
@@ -377,6 +418,10 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     gt = mippy.GattTool(args.adaptor, args.device)
     mip = mippy.Mip(gt)
+    # initialise some global variables
+    lastBatteryUpdateTime = 0.0
+    lastDistanceUpdateTime = 0.0
+    lastOrientationUpdateTime = 0.0
     # start gui
     root = Tk()
     root.title("MiP Explorer GUI")
