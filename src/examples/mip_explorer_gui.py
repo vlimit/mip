@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
 """
-This GUI is designed for general eploration using MiP.
+This GUI is designed for general exploration using MiP.
 ./mip_explorer_gui.py -i hci0 -b D0:39:72:C4:7A:01
 """
 from Tkinter import *
-#import Tkinter
 from movement_canvas import MovementCanvas
 import logging
 import mippy
@@ -288,7 +287,7 @@ class TelemetryWindow(Toplevel):
         # distance
         resetOdometerButton = Button(telemetryFrame, text = "Reset", command = self.resetOdometer)
         resetOdometerButton.grid(column=0,row=2)
-        distanceLabel = Label(telemetryFrame, text = "Distance(m):")
+        distanceLabel = Label(telemetryFrame, text = "Distance(cm):")
         distanceLabel.grid(column=1,row=2)
         distanceValueLabel = Label(telemetryFrame, text = "0.0")
         distanceValueLabel.grid(column=2,row=2)
@@ -382,18 +381,24 @@ def updateLoop():
                                  'on back with kickstand' ]
             #logging.debug('updateLoop : Orientation = %s ' % (orientationString[orientation]))
             orientationValueLabel.config(text=orientationString[orientation])
+            if(orientation == 2):
+                orientationValueLabel.config(background='green')
+            else:
+                orientationValueLabel.config(background='red')
             lastOrientationUpdateTime = thisTime
         if((thisTime - lastDistanceUpdateTime) > 10.0):
             #logging.debug('updateLoop : Attempting distance update')
             distance = mip.getOdometer()
-            #logging.debug('updateLoop : Distance = %f m' % (distance))
-            distanceValueLabel.config(text=str(distance))
+            #logging.debug('updateLoop : Distance = %f cm' % (distance))
+#            distanceValueLabel.config(text=str(distance))
+            distanceValueLabel.config(text=("%.2f" % distance).strip())
             lastDistanceUpdateTime = thisTime
         if((thisTime - lastBatteryUpdateTime) > 60.0):
             #logging.debug('updateLoop : Attempting battery level update')
             batteryLevel = mip.getBatteryLevel()
             #logging.debug('updateLoop : Battery Level = %f v' % (batteryLevel))
-            batteryValueLabel.config(text=str(batteryLevel))
+#            batteryValueLabel.config(text=str(batteryLevel))
+            batteryValueLabel.config(text=("%.2f" % batteryLevel).strip())
             lastBatteryUpdateTime = thisTime
     root.after(50,updateLoop)
 
