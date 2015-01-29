@@ -623,6 +623,54 @@ class Mip:
         logging.debug('getVolume: volume is %x.' % (volume))
         return volume
 
+    def getClapTimes(self):
+        """
+        Return clap times (whether claps have been detected)
+        Use clapEnable to turn on clap recognition first
+        """
+        done = 0
+        try:
+            logging.debug('getClapTimes: sending Command 0x1D.')
+            self.gt.charWriteCmd(0x13, [0x1D])
+            returnVals = self.gt.charReadReply(0x13, 0x1D)
+            clapTimes = returnVals[1]
+            done = 1
+        except pexpect.TIMEOUT:
+            clapTimes = 0
+            logging.debug('getClapTimes: TIMEOUT.')
+        logging.debug('getClapTimes: returning %x.' % (clapTimes))
+        return clapTimes
+
+    def clapEnable(self, onoff=0x01):
+        """
+        Enable clap recognition
+        """
+        logging.debug('clapEnable: Sending Command 0x1E.')
+        self.gt.charWriteCmd(0x13, [0x1E, onoff])
+
+    def requestClapStatus(self):
+        """
+        Get the current clap config
+        """
+        retryCount = 0
+        done = 0
+        while((retryCount < 10) and (done == 0)):
+            try:
+                logging.debug('requestClapStatus: sending Command 0x1F  : attempt %d.' % (retryCount))
+                self.gt.charWriteCmd(0x13, [0x1F])
+                returnVals = self.gt.charReadReply(0x13, 0x1F)
+                onoff = returnVals[1]
+                delayTime1 = returnVals[2]
+                delayTime2 = returnVals[3]
+                done = 1
+            except pexpect.TIMEOUT:
+                retryCount += 1
+                onoff = 0
+                delayTime1 = 0
+                delayTime2 = 0
+        logging.debug('requestClapStatus: returning onoff=%x, clap delay times (%x,%x).' % (onoff,delayTime1,delayTime2))
+        return onoff
+
 class Turtle:
     def __init__(self, mip):
         self.mip = mip
