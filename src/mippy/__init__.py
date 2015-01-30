@@ -366,7 +366,12 @@ class Mip:
     def setHeadLed(self, light1, light2, light3, light4):
         """
         Set Head LEDs (eyes). Each light<n> control one half of one of MiPS eyes,
-        legal values are:
+        light1 left hand side left eye
+        light2 right hand side left eye
+        light3 left hand side right eye
+        light4 right hand side right eye
+
+        legal values for each light are:
         0 = off
         1 = on
         2 = blink slow

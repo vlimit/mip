@@ -240,11 +240,121 @@ class ModeWindow(Toplevel):
         roamRadio = Radiobutton(modeFrame, text="Roam", variable=self.modeVar, value=0x8, 
                                  command=self.modeSelected)
         roamRadio.pack(side=TOP)
-        # We are by default in App mode
-        #appRadio.select()
 
     def modeSelected(self):
         mip.setGameMode(self.modeVar.get())
+
+
+class EyesWindow(Toplevel):
+    """
+    Class to manage and control the eyes.
+    """
+
+    def __init__(self, master=None):
+        Toplevel.__init__(self, master)
+        self.startEyesWindow()
+
+    def startEyesWindow(self):
+        self.title("Eyes Window")
+        self.geometry("400x100")
+        eyesMenubar = Menu(self)
+        eyesFileMenu = Menu(eyesMenubar, tearoff=0)
+        eyesFileMenu.add_command(label="Exit", command=self.destroy)
+        eyesMenubar.add_cascade(label="File", menu=eyesFileMenu)
+        self.config(menu=eyesMenubar)
+        eyesFrame = Frame(self)
+        eyesFrame.pack()
+        self.leftEyeLeftVar = StringVar()
+        self.leftEyeLeftVar.set("on")
+        self.leftEyeRightVar = StringVar()
+        self.leftEyeRightVar.set("on")
+        self.rightEyeLeftVar = StringVar()
+        self.rightEyeLeftVar.set("on")
+        self.rightEyeRightVar = StringVar()
+        self.rightEyeRightVar.set("on")
+        self.leftEyeLeftOption = OptionMenu(eyesFrame, self.leftEyeLeftVar,
+                                       "off", "on", "slow blink", "fast blink", 
+                                       command=self.updateEyes)
+        self.leftEyeLeftOption.grid(column=0,row=0)
+        self.leftEyeRightOption = OptionMenu(eyesFrame, self.leftEyeRightVar,
+                                        "off", "on", "slow blink", "fast blink", 
+                                       command=self.updateEyes)
+        self.leftEyeRightOption.grid(column=1,row=0)
+        self.rightEyeLeftOption = OptionMenu(eyesFrame,self.rightEyeLeftVar,
+                                        "off", "on", "slow blink", "fast blink", 
+                                       command=self.updateEyes)
+        self.rightEyeLeftOption.grid(column=2,row=0)
+        self.rightEyeRightOption = OptionMenu(eyesFrame,self.rightEyeRightVar,
+                                         "off","on", "slow blink", "fast blink", 
+                                       command=self.updateEyes)
+        self.rightEyeRightOption.grid(column=3,row=0)
+        leftWinkButton = Button(eyesFrame, text = "Wink", command = lambda: self.winkEyes(0x0))
+        leftWinkButton.grid(column=0,row=1)
+        rightWinkButton = Button(eyesFrame, text = "Wink", command = lambda: self.winkEyes(0x1))
+        rightWinkButton.grid(column=3,row=1)
+
+    def updateEyes(self,value):
+        """
+        Based on the eyes window per-eye option menus, update MiPs eyes
+        """
+        #leftEyeLeftString = self.leftEyeLeftVar.get()
+        #logging.debug('updateEyes : leftEyeLeftString = %s' % (leftEyeLeftString))
+        #leftEyeLeftInt = self.optionToInt(leftEyeLeftString)
+        #logging.debug('updateEyes : leftEyeLeftInt = %d' % (leftEyeLeftInt))
+        leftEyeLeft = self.optionToInt(self.leftEyeLeftVar.get())
+        leftEyeRight = self.optionToInt(self.leftEyeRightVar.get())
+        rightEyeLeft = self.optionToInt(self.rightEyeLeftVar.get())
+        rightEyeRight = self.optionToInt(self.rightEyeRightVar.get())
+        mip.setHeadLed(leftEyeLeft,leftEyeRight,rightEyeLeft,rightEyeRight)
+
+    def optionToInt(self,s):
+        """
+        Convert an option menu string to an integer value suitable for setHeadLed i.e.
+        "off" returns 0
+        "on" returns 1
+        "slow blink" returns 2
+        "fast blink" returns 3
+        """
+        if s == "off":
+            return 0
+        elif s == "on":
+            return 1
+        elif s == "slow blink":
+            return 2
+        elif s == "fast blink":
+            return 3
+        else:
+            return 0
+            
+    def winkEyes(self,eye=0x1):
+        """
+        Wink an eye.
+        eye=0x0 left eye
+        eye=0x1 right eye
+        """
+        # all on
+        mip.setHeadLed(0x1,0x1,0x1,0x1)
+        time.sleep(1.0)
+        # first half
+        if eye == 1:
+            mip.setHeadLed(0x1,0x1,0x1,0x0)
+        else:
+            mip.setHeadLed(0x0,0x1,0x1,0x1)
+        time.sleep(0.2)
+        # wink
+        if eye == 1:
+            mip.setHeadLed(0x1,0x1,0x0,0x0)
+        else:
+            mip.setHeadLed(0x0,0x0,0x1,0x1)
+        time.sleep(1.0)
+        # second half
+        if eye == 1:
+            mip.setHeadLed(0x1,0x1,0x1,0x0)
+        else:
+            mip.setHeadLed(0x0,0x1,0x1,0x1)
+        time.sleep(0.2)
+        # all on
+        mip.setHeadLed(0x1,0x1,0x1,0x1)
 
 class TelemetryWindow(Toplevel):
     """
@@ -354,6 +464,12 @@ def startModeWindow():
 # move MiP in and out of computer control, allow selection of roam and music modes
     modeWindow = ModeWindow()
 
+def startEyesWindow():
+    """
+    Manage an eyes control window
+    """
+    eyesWindow = EyesWindow()
+
 def updateLoop():
     """
     Top-level update loop.
@@ -431,7 +547,7 @@ if __name__ == '__main__':
     root = Tk()
     root.title("MiP Explorer GUI")
     root.geometry("600x300")
-    logging.debug('main:1')
+    #logging.debug('main:1')
 
     menubar = Menu(root)
     fileMenu = Menu(menubar, tearoff=0)
@@ -441,21 +557,22 @@ if __name__ == '__main__':
     windowMenu.add_command(label="Sound", command=startSoundWindow)
     windowMenu.add_command(label="Telemetry", command=startTelemetryWindow)
     windowMenu.add_command(label="Mode", command=startModeWindow)
+    windowMenu.add_command(label="Eyes", command=startEyesWindow)
     menubar.add_cascade(label="Window", menu=windowMenu)
     root.config(menu=menubar)
 
-    logging.debug('main:2')
+    #logging.debug('main:2')
     rootFrame = Frame(root)
     rootFrame.grid(column=0,row=1)
     
-    logging.debug('main:3')
+    #logging.debug('main:3')
     # Fixed drive GUI
     fixedDriveFrame = Frame(rootFrame)
     fixedDriveFrame.grid(column=0,row=0)
     configFrame = Frame(fixedDriveFrame)
     configFrame.grid(column=0,row=0)
 
-    logging.debug('main:4')
+    #logging.debug('main:4')
     labeld = Label(configFrame, text = "Distance(m):")
     labeld.grid(column=0,row=0)
 
@@ -501,16 +618,15 @@ if __name__ == '__main__':
     quitButton = Button(controlFrame, text='Quit', command=root.destroy)
     quitButton.grid(column=1,row=3)
 
-    logging.debug('main:5')
+    #logging.debug('main:5')
     # movement canvas (continuous drive mode)
     movementCanvas = MovementCanvas(rootFrame,300,300)
     movementCanvas.canvas.grid(column=1,row=0)
     movementCanvas.setBindings()
-#    movementCanvas.pack()
-
+    # Initialise odometer
     mip.resetOdomemeter()
 
-    logging.debug('main:6')
+    #logging.debug('main:6')
     root.after(50,updateLoop)
-    logging.debug('main:7')
+    #logging.debug('main:7')
     root.mainloop()
