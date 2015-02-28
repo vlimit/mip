@@ -334,14 +334,14 @@ class Mip:
     def setGameMode(self, mode):
         """
         Set game mode, mode is one of:
-         0x01 – App
-         0x02 – Cage Play back
-         0x03 – Tracking
-         0x04 – Dance Play back
-         0x05 – Default Mip Mode
-         0x06 – Stack Play back
-         0x07 – Trick programming and playback
-         0x08 – Roam Mode Play back	
+         0x01 - App
+         0x02 - Cage Play back
+         0x03 - Tracking
+         0x04 - Dance Play back
+         0x05 - Default Mip Mode
+         0x06 - Stack Play back
+         0x07 - Trick programming and playback
+         0x08 - Roam Mode Play back	
         """
         self.gt.charWriteCmd(0x13, [0x76, mode])
 
